@@ -18,7 +18,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
     user: user,
   });
 
-  return redirect('/dashboard', {
+  return redirect('/', {
     headers: {
       'Set-Cookie': await commitSession(session),
     },

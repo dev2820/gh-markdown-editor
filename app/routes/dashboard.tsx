@@ -1,9 +1,10 @@
 import { NavLink, redirect } from 'react-router';
 
+import { fetchRepos } from '@/apis/github';
 import { SiteLogo } from '@/components/SiteLogo';
 import { UserProfile } from '@/components/UserProfile';
 import { Spacer } from '@/components/ui/Spacer';
-import { authenticator } from '@/services/auth.server';
+import { getSession } from '@/services/session.server';
 import { cn } from '@/utils/cn';
 
 import type { Route } from './+types/dashboard';
@@ -16,17 +17,25 @@ export function meta() {
 }
 
 export async function loader({ request }: Route.LoaderArgs) {
-  const { user } = await authenticator.authenticate('github', request);
+  const session = await getSession(request.headers.get('Cookie'));
+  const { user, accessToken } = session.get('user');
 
-  if (user) {
-    return { user: user };
-  } else {
+  if (!user) {
     return redirect('/login');
+  }
+
+  try {
+    const repos = await fetchRepos(user.login, accessToken);
+    return { user, repos };
+  } catch (err) {
+    console.error('failed to fetch repos', err);
+    return { user, repos: [] };
   }
 }
 
 export default function Dashboard({ loaderData }: Route.ComponentProps) {
-  const { user } = loaderData;
+  const { user, repos } = loaderData;
+  console.log(user, repos);
   return (
     <main className={cn('flex flex-col w-dvw h-dvh overflow-auto')}>
       <header className="h-12">
