@@ -1,26 +1,39 @@
-import { fetchUser } from "@/apis/github";
-import { Authenticator } from "remix-auth";
-import { GitHubStrategy } from "remix-auth-github"
+import { Authenticator } from 'remix-auth';
+import { GitHubStrategy } from 'remix-auth-github';
 
-export const authenticator = new Authenticator();
+import { type GithubUser, fetchUser } from '@/apis/github';
+
+export const authenticator = new Authenticator<{
+  user: GithubUser;
+  accessToken: string;
+  refreshToken: string | null;
+}>();
 
 authenticator.use(
-  new GitHubStrategy(
+  new GitHubStrategy<{
+    user: GithubUser;
+    accessToken: string;
+    refreshToken: string | null;
+  }>(
     {
       clientId: process.env.GITHUB_APP_CLIENT_ID!,
       clientSecret: process.env.GITHUB_APP_CLIENT_SECRET!,
-      redirectURI: "https://example.app/auth/callback",
-      scopes: ["user:email"], // optional
+      redirectURI: 'http://localhost:5173/login/github/callback',
+      scopes: ['user:email'], // optional
     },
-    async ({ tokens, request }) => {
-      const user = await fetchUser(tokens.accessToken());
+    async ({ tokens }) => {
+      const user = await fetchUser(tokens.accessToken()); // 추후 에러 처리 필요
+      const accessToken = tokens.accessToken();
+      const refreshToken = tokens.hasRefreshToken()
+        ? tokens.refreshToken()
+        : null;
 
       return {
-        user,
-        accessToken: tokens.accessToken(),
-        refreshToken: tokens.hasRefreshToken() ? tokens.refreshToken() : null,
-      }
-    }
+        user: user!,
+        accessToken,
+        refreshToken,
+      };
+    },
   ),
-  "github"
+  'github',
 );
