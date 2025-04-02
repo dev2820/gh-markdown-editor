@@ -1,7 +1,7 @@
 import { Authenticator } from 'remix-auth';
 import { GitHubStrategy } from 'remix-auth-github';
 
-import { type GithubUser, fetchUser } from '@/apis/github';
+import { type GithubUser, createGhClient, fetchUser } from '@/apis/github';
 
 export const authenticator = new Authenticator<{
   user: GithubUser;
@@ -22,11 +22,13 @@ authenticator.use(
       scopes: ['user:email'], // optional
     },
     async ({ tokens }) => {
-      const user = await fetchUser(tokens.accessToken()); // 추후 에러 처리 필요
       const accessToken = tokens.accessToken();
       const refreshToken = tokens.hasRefreshToken()
         ? tokens.refreshToken()
         : null;
+
+      const ghClient = createGhClient(accessToken);
+      const user = await fetchUser(ghClient); // 추후 에러 처리 필요
 
       return {
         user: user!,

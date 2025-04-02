@@ -1,31 +1,27 @@
 import { create } from 'zustand';
 
 type UserState = {
-  name: string | null;
-  email: string | null;
-  profileUrl: string | null;
-  setUser: (user: {
+  user: {
+    login: string | null;
     name: string | null;
     email: string | null;
     profileUrl: string | null;
-  }) => void;
+  };
+};
+type UserAction = {
+  setUser: (user: UserState['user']) => void;
   clearUser: () => void;
 };
 
-export const useUserStore = create<UserState>((set) => ({
+const defaultUser = {
+  login: null,
   name: null,
   email: null,
   profileUrl: null,
-  setUser: ({ name, email, profileUrl }) =>
-    set({
-      name,
-      email,
-      profileUrl,
-    }),
-  clearUser: () =>
-    set({
-      name: null,
-      email: null,
-      profileUrl: null,
-    }),
+};
+
+export const useUserStore = create<UserState & UserAction>((set) => ({
+  user: defaultUser,
+  setUser: (user) => set({ user: user }),
+  clearUser: () => set({ user: defaultUser }),
 }));

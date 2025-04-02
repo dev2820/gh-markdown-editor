@@ -21,7 +21,7 @@ export function UserProfile(props: UserProfileProps) {
 
 type UserPhotoProps = ComponentProps<'div'>;
 function UserPhoto(props: UserPhotoProps) {
-  const user = useUserStore();
+  const user = useUserStore((s) => s.user);
 
   return (
     <div {...props}>
@@ -41,7 +41,7 @@ function UserPhoto(props: UserPhotoProps) {
 type UserNameProps = ComponentProps<'div'>;
 function UserName(props: UserNameProps) {
   const { className, ...rest } = props;
-  const user = useUserStore();
+  const user = useUserStore((s) => s.user);
 
   return (
     <span className={cn('text-lg font-semibold truncate', className)} {...rest}>

@@ -6,11 +6,16 @@ import {
   Scripts,
   ScrollRestoration,
   isRouteErrorResponse,
+  redirect,
 } from 'react-router';
 
 import './app.css';
 
+import { getSession } from '@/services/session.server';
+import { useUserStore } from '@/stores/user';
+
 import type { Route } from './+types/root';
+import { TokenManager } from './libs/TokenManager';
 
 export const links: Route.LinksFunction = () => [
   { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
@@ -26,6 +31,7 @@ export const links: Route.LinksFunction = () => [
 ];
 
 export const queryClient = new QueryClient();
+
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
@@ -45,7 +51,29 @@ export function Layout({ children }: { children: React.ReactNode }) {
     </html>
   );
 }
-export default function App() {
+
+export const loader = async ({ request }: Route.LoaderArgs) => {
+  const session = await getSession(request.headers.get('Cookie'));
+  const { user, accessToken } = session.get('user');
+
+  if (!user) {
+    return redirect('/login');
+  }
+
+  return { user, accessToken };
+};
+
+export default function App({ loaderData }: Route.ComponentProps) {
+  const { user, accessToken } = loaderData;
+  TokenManager.setAccessToken(accessToken);
+  const setUser = useUserStore((s) => s.setUser);
+  setUser({
+    login: user.login,
+    name: user.name,
+    email: user.email,
+    profileUrl: user.avatar_url,
+  });
+
   return <Outlet />;
 }
 

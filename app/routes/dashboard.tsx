@@ -1,10 +1,13 @@
-import { NavLink, redirect } from 'react-router';
+import { Suspense } from 'react';
+import { NavLink } from 'react-router';
 
-import { fetchRepos } from '@/apis/github';
+import { createGhClient, fetchRepos } from '@/apis/github';
+import { RepositoryList } from '@/components/RepositoryList';
 import { SiteLogo } from '@/components/SiteLogo';
 import { UserProfile } from '@/components/UserProfile';
 import { Spacer } from '@/components/ui/Spacer';
 import { getSession } from '@/services/session.server';
+import { useUserStore } from '@/stores/user';
 import { cn } from '@/utils/cn';
 
 import type { Route } from './+types/dashboard';
@@ -20,22 +23,15 @@ export async function loader({ request }: Route.LoaderArgs) {
   const session = await getSession(request.headers.get('Cookie'));
   const { user, accessToken } = session.get('user');
 
-  if (!user) {
-    return redirect('/login');
-  }
-
-  try {
-    const repos = await fetchRepos(user.login, accessToken);
-    return { user, repos };
-  } catch (err) {
-    console.error('failed to fetch repos', err);
-    return { user, repos: [] };
-  }
+  return {
+    repoPromise: fetchRepos(user.login, createGhClient(accessToken)),
+  };
 }
 
-export default function Dashboard({ loaderData }: Route.ComponentProps) {
-  const { user, repos } = loaderData;
-  console.log(user, repos);
+export default function ({ loaderData }: Route.ComponentProps) {
+  const { repoPromise } = loaderData;
+  const user = useUserStore((s) => s.user);
+
   return (
     <main className={cn('flex flex-col w-dvw h-dvh overflow-auto')}>
       <header className="h-12">
@@ -52,8 +48,10 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
         </div>
       </header>
       <div className="w-full max-w-desktop mx-auto px-4">
-        dashboard
-        {user.name}
+        <h1>Hello {user.name}!</h1>
+        <Suspense fallback={<div>Loading...</div>}>
+          <RepositoryList repoPromise={repoPromise} />
+        </Suspense>
       </div>
     </main>
   );
